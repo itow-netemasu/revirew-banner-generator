@@ -250,18 +250,25 @@ function layoutInline(ctx, blocks, x0, maxW, align, bodySz, bodyLh) {
   ctx.font = state.weight + ' ' + bodySz + 'px ' + FONT_JP;
   let x = x0, y = 0;
   const chars = [];
+  const BAND_GAP = 14;
+  let prevStyle = null;
   for (let bi = 0; bi < blocks.length; bi++) {
     const b = blocks[bi];
     if (!b.text) continue;
     for (const ch of b.text) {
       if (ch === '\n') {
         chars.push({ ch: '\n', style: b.style, x, y, w: 0 });
-        x = x0; y += bodyLh; continue;
+        x = x0; y += bodyLh; prevStyle = null; continue;
       }
       const cw = ctx.measureText(ch).width;
-      if (x + cw > x0 + maxW + 0.5) { x = x0; y += bodyLh; }
+      if (prevStyle !== null && prevStyle !== b.style &&
+          (b.style === 'band' || prevStyle === 'band')) {
+        x += BAND_GAP;
+      }
+      if (x + cw > x0 + maxW + 0.5) { x = x0; y += bodyLh; prevStyle = null; }
       chars.push({ ch, style: b.style, x, y, w: cw });
       x += cw;
+      prevStyle = b.style;
     }
   }
 
