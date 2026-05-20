@@ -239,6 +239,20 @@ function processAvatar(img) {
     }
   }
 
+  // Erode transparent area by 1px to restore outline edge pixels
+  const alpha = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) alpha[i] = d[i * 4 + 3];
+  for (let px = 0; px < w * h; px++) {
+    if (alpha[px] > 0) continue;
+    const x = px % w, y = (px / w) | 0;
+    if ((x > 0   && alpha[px - 1] > 0) ||
+        (x < w-1 && alpha[px + 1] > 0) ||
+        (y > 0   && alpha[px - w] > 0) ||
+        (y < h-1 && alpha[px + w] > 0)) {
+      d[px * 4 + 3] = 255;
+    }
+  }
+
   octx.putImageData(id, 0, 0);
   return oc;
 }
