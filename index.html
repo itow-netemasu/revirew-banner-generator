@@ -253,9 +253,6 @@ function layoutInline(ctx, blocks, x0, maxW, align, bodySz, bodyLh) {
   for (let bi = 0; bi < blocks.length; bi++) {
     const b = blocks[bi];
     if (!b.text) continue;
-    if (b.style === 'band') {
-      if (x > x0) { x = x0; y += bodyLh; }
-    }
     for (const ch of b.text) {
       if (ch === '\n') {
         chars.push({ ch: '\n', style: b.style, x, y, w: 0 });
@@ -265,9 +262,6 @@ function layoutInline(ctx, blocks, x0, maxW, align, bodySz, bodyLh) {
       if (x + cw > x0 + maxW + 0.5) { x = x0; y += bodyLh; }
       chars.push({ ch, style: b.style, x, y, w: cw });
       x += cw;
-    }
-    if (b.style === 'band') {
-      if (x > x0) { x = x0; y += bodyLh; }
     }
   }
 
