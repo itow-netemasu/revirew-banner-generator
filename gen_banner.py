@@ -227,7 +227,7 @@ function processAvatar(img) {
 
   while (head < queue.length) {
     const px = queue[head++];
-    d[px*4+3] = 0;
+    d[px*4] = 255; d[px*4+1] = 255; d[px*4+2] = 255;
     const x = px % w, y = (px / w) | 0;
     const ns = [];
     if (x > 0)   ns.push(px - 1);
@@ -236,20 +236,6 @@ function processAvatar(img) {
     if (y < h-1) ns.push(px + w);
     for (const n of ns) {
       if (!visited[n] && isDark(n)) { visited[n] = 1; queue.push(n); }
-    }
-  }
-
-  // Erode transparent area by 1px to restore outline edge pixels
-  const alpha = new Uint8Array(w * h);
-  for (let i = 0; i < w * h; i++) alpha[i] = d[i * 4 + 3];
-  for (let px = 0; px < w * h; px++) {
-    if (alpha[px] > 0) continue;
-    const x = px % w, y = (px / w) | 0;
-    if ((x > 0   && alpha[px - 1] > 0) ||
-        (x < w-1 && alpha[px + 1] > 0) ||
-        (y > 0   && alpha[px - w] > 0) ||
-        (y < h-1 && alpha[px + w] > 0)) {
-      d[px * 4 + 3] = 255;
     }
   }
 
