@@ -193,7 +193,7 @@ async function loadImages() {
   await Promise.all(tasks);
 }
 
-// ─── Flood-fill background removal ───────────────────────────
+// ─── Avatar background removal ───────────────────────────────
 function processAvatar(img) {
   const oc = document.createElement('canvas');
   oc.width  = img.naturalWidth;
@@ -204,24 +204,35 @@ function processAvatar(img) {
   const id = octx.getImageData(0, 0, oc.width, oc.height);
   const d  = id.data;
   const w  = oc.width, h = oc.height;
+
+  // If corners are already transparent, background removal is not needed
+  const corners = [0, (w-1), w*(h-1), w*(h-1)+(w-1)];
+  const isAlreadyTransparent = corners.every(px => d[px*4+3] < 128);
+  if (isAlreadyTransparent) return oc;
+
+  // Opaque background: flood-fill from edges to find background region
   const visited = new Uint8Array(w * h);
   const queue   = [];
   let head = 0;
 
-  const isDark = px => {
+  // Sample background color from top-left corner
+  const bgR = d[0], bgG = d[1], bgB = d[2];
+  const isBg = px => {
     const i = px * 4;
-    return d[i] < 60 && d[i+1] < 60 && d[i+2] < 60;
+    return d[i+3] > 128 &&
+           Math.abs(d[i]   - bgR) < 30 &&
+           Math.abs(d[i+1] - bgG) < 30 &&
+           Math.abs(d[i+2] - bgB) < 30;
   };
 
-  // Seed from all four edges
   for (let x = 0; x < w; x++) {
     for (const px of [x, w*(h-1)+x]) {
-      if (!visited[px] && isDark(px)) { visited[px] = 1; queue.push(px); }
+      if (!visited[px] && isBg(px)) { visited[px] = 1; queue.push(px); }
     }
   }
   for (let y = 1; y < h-1; y++) {
     for (const px of [y*w, y*w+w-1]) {
-      if (!visited[px] && isDark(px)) { visited[px] = 1; queue.push(px); }
+      if (!visited[px] && isBg(px)) { visited[px] = 1; queue.push(px); }
     }
   }
 
@@ -235,24 +246,7 @@ function processAvatar(img) {
     if (y > 0)   ns.push(px - w);
     if (y < h-1) ns.push(px + w);
     for (const n of ns) {
-      if (!visited[n] && isDark(n)) { visited[n] = 1; queue.push(n); }
-    }
-  }
-
-  // Erode: restore outline-adjacent pixels, but skip outer ring to avoid black circle border
-  const alpha = new Uint8Array(w * h);
-  for (let i = 0; i < w * h; i++) alpha[i] = d[i * 4 + 3];
-  const cx = w / 2, cy = h / 2;
-  const safeR = Math.min(w, h) * 0.46;
-  for (let px = 0; px < w * h; px++) {
-    if (alpha[px] > 0) continue;
-    const x = px % w, y = (px / w) | 0;
-    if ((x - cx) * (x - cx) + (y - cy) * (y - cy) > safeR * safeR) continue;
-    if ((x > 0   && alpha[px - 1] > 0) ||
-        (x < w-1 && alpha[px + 1] > 0) ||
-        (y > 0   && alpha[px - w] > 0) ||
-        (y < h-1 && alpha[px + w] > 0)) {
-      d[px * 4 + 3] = 255;
+      if (!visited[n] && isBg(n)) { visited[n] = 1; queue.push(n); }
     }
   }
 
